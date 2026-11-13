@@ -49,7 +49,7 @@ class _AuthScreenState extends State<AuthScreen> {
               Container(width: 38, height: 38, decoration: BoxDecoration(color: purple, borderRadius: BorderRadius.circular(12)),
                   child: const Icon(Icons.checkroom, color: Colors.white, size: 22)),
               const SizedBox(width: 10),
-              const Text('TrueFit AI', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18)),
+              const Text('TrueFit Studio', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18)),
               const Spacer(),
               TextButton(onPressed: () => go(AuthView.login), child: const Text('Sign In', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700))),
             ]),
@@ -100,8 +100,8 @@ class _AuthScreenState extends State<AuthScreen> {
       key: ValueKey(view),
       appBar: AppBar(leading: BackButton(onPressed: () => go(view == AuthView.forgot ? AuthView.login : AuthView.welcome))),
       body: ListView(padding: const EdgeInsets.fromLTRB(24, 0, 24, 24), children: [
-        Container(width: 52, height: 52, alignment: Alignment.center, decoration: BoxDecoration(color: lavender, borderRadius: BorderRadius.circular(16)),
-            child: const Icon(Icons.checkroom, color: purple)),
+        Align(alignment: Alignment.centerLeft, child: Container(width: 52, height: 52, alignment: Alignment.center, decoration: BoxDecoration(color: lavender, borderRadius: BorderRadius.circular(16)),
+            child: const Icon(Icons.checkroom, color: purple))),
         const SizedBox(height: 18),
         Text(title, style: display(30)),
         const SizedBox(height: 6),
@@ -114,7 +114,7 @@ class _AuthScreenState extends State<AuthScreen> {
         if (view == AuthView.signup) CheckboxListTile(
           contentPadding: EdgeInsets.zero, controlAffinity: ListTileControlAffinity.leading, value: accepted,
           onChanged: (v) => setState(() => accepted = v ?? false),
-          title: const Text('I agree to the TrueFit AI Terms of Service and Privacy Policy.', style: TextStyle(fontSize: 13)),
+          title: const Text('I agree to the TrueFit Studio Terms of Service and Privacy Policy.', style: TextStyle(fontSize: 13)),
         ),
         const SizedBox(height: 12),
         FilledButton(style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(54)), onPressed: () => _submit(s),

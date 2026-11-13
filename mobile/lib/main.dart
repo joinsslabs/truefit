@@ -1,3 +1,5 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:material_ui/material_ui.dart';
 
 import 'screens/auth.dart';
@@ -22,7 +24,7 @@ class TrueFitApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final rounded = RoundedRectangleBorder(borderRadius: BorderRadius.circular(14));
     return MaterialApp(
-      title: 'TrueFit AI',
+      title: 'TrueFit Studio',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
@@ -108,7 +110,7 @@ class _RootState extends State<Root> {
           leading: const {AppTab.saved, AppTab.orders, AppTab.tailorDesk}.contains(s.tab) ? BackButton(onPressed: () => s.go(AppTab.profile)) : null,
           title: GestureDetector(onTap: () => s.go(AppTab.home), child: const Row(mainAxisSize: MainAxisSize.min, children: [
             Icon(Icons.checkroom, color: purple), SizedBox(width: 8),
-            Text('TrueFit AI', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: -0.3)),
+            Text('TrueFit Studio', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: -0.3)),
           ])),
           actions: [
             IconButton(tooltip: 'Saved looks', onPressed: () => s.go(AppTab.saved),
@@ -118,24 +120,64 @@ class _RootState extends State<Root> {
           ],
         ),
         body: AnimatedSwitcher(duration: const Duration(milliseconds: 200), child: KeyedSubtree(key: ValueKey(s.tab), child: body)),
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: navIndex,
-          onDestinationSelected: (i) => s.go(tabs[i]),
-          destinations: const [
-            NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home, color: purple), label: 'Home'),
-            NavigationDestination(icon: Icon(Icons.straighten_outlined), selectedIcon: Icon(Icons.straighten, color: purple), label: 'Fit Studio'),
-            NavigationDestination(icon: Icon(Icons.content_cut_outlined), selectedIcon: Icon(Icons.content_cut, color: purple), label: 'Book'),
-            NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person, color: purple), label: 'Profile'),
-          ],
-        ),
+        bottomNavigationBar: _GlassTabBar(index: navIndex, onTap: (i) => s.go(tabs[i])),
       ),
     );
   }
 }
 
 
-/// On a computer screen, shows the app inside a modern phone: 19.5:9 shape, thin bezel,
-/// Dynamic-Island-style notch, live status bar, home indicator and side buttons.
+/// Floating, frosted tab bar like modern iOS apps.
+class _GlassTabBar extends StatelessWidget {
+  final int index;
+  final ValueChanged<int> onTap;
+  const _GlassTabBar({required this.index, required this.onTap});
+  static const _items = [
+    (Icons.home_outlined, Icons.home_rounded, 'Home'),
+    (Icons.straighten_outlined, Icons.straighten, 'Fit Studio'),
+    (Icons.content_cut_outlined, Icons.content_cut, 'Book'),
+    (Icons.person_outline, Icons.person_rounded, 'Profile'),
+  ];
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.of(context).padding.bottom;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(16, 0, 16, bottom > 0 ? bottom - 6 : 12),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(30),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+          child: Container(
+            height: 64,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.78), borderRadius: BorderRadius.circular(30),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.9)),
+              boxShadow: const [BoxShadow(color: Color(0x22211D2B), blurRadius: 24, offset: Offset(0, 8))],
+            ),
+            padding: const EdgeInsets.all(6),
+            child: Row(children: [
+              for (var i = 0; i < _items.length; i++) Expanded(child: GestureDetector(
+                behavior: HitTestBehavior.opaque, onTap: () => onTap(i),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 250), curve: Curves.easeOut,
+                  decoration: BoxDecoration(color: i == index ? purple : Colors.transparent, borderRadius: BorderRadius.circular(24)),
+                  child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    Icon(i == index ? _items[i].$2 : _items[i].$1, size: 21, color: i == index ? Colors.white : muted),
+                    const SizedBox(height: 2),
+                    Text(_items[i].$3, style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: i == index ? Colors.white : muted)),
+                  ]),
+                ),
+              )),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// On a computer screen, shows the app inside an iPhone-style phone: titanium edge, thin black
+/// bezel, Dynamic Island, iOS status bar, home indicator, Action button and Camera Control.
 class PhoneFrame extends StatefulWidget {
   final Widget child;
   const PhoneFrame({super.key, required this.child});
@@ -149,62 +191,113 @@ class _PhoneFrameState extends State<PhoneFrame> {
   @override
   Widget build(BuildContext context) {
     final mq = MediaQuery.of(context);
-    final h = (mq.size.height - 56).clamp(520.0, 880.0);
-    final w = (h * 9 / 19.5).clamp(372.0, 420.0);
-    const bezel = 11.0, statusH = 50.0, homeH = 26.0;
-    final screen = Size(w - bezel * 2, h - bezel * 2);
-    Widget sideButton(double top, double height, {bool left = true}) => Positioned(
-          top: top, left: left ? -3 : null, right: left ? null : -3,
-          child: Container(width: 4, height: height, decoration: BoxDecoration(color: const Color(0xFF2A2730), borderRadius: BorderRadius.circular(2))),
+    // Always a true iPhone Pro Max shape (430 x 932 points), scaled as a whole to fit the window,
+    // so a short window never squashes the phone.
+    const w = 430.0, h = 932.0;
+    const edge = 3.0, bezel = 6.0, statusH = 54.0, homeH = 30.0;
+    final screen = Size(w - (edge + bezel) * 2, h - (edge + bezel) * 2);
+    const titanium = LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight,
+        colors: [Color(0xFF8E8A93), Color(0xFF4A4750), Color(0xFF9C98A2), Color(0xFF3E3C44)], stops: [0, 0.35, 0.65, 1]);
+    Widget button(double top, double height, {bool left = true, double width = 4}) => Positioned(
+          top: top, left: left ? -width + 1 : null, right: left ? null : -width + 1,
+          child: Container(width: width, height: height,
+              decoration: BoxDecoration(gradient: titanium, borderRadius: BorderRadius.circular(2))),
         );
     return DecoratedBox(
-      decoration: const BoxDecoration(gradient: RadialGradient(center: Alignment(0, -0.3), radius: 1.2,
-          colors: [Color(0xFF2B2246), Color(0xFF0E0C14)])),
-      child: Center(child: SizedBox(width: w, height: h, child: Stack(clipBehavior: Clip.none, children: [
-        sideButton(h * 0.17, 28), sideButton(h * 0.24, 54), sideButton(h * 0.33, 54), sideButton(h * 0.26, 86, left: false),
+      decoration: const BoxDecoration(gradient: RadialGradient(center: Alignment(0, -0.2), radius: 1.1,
+          colors: [Color(0xFF2E2840), Color(0xFF0C0B11)])),
+      child: Padding(padding: const EdgeInsets.all(22), child: Center(child: FittedBox(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 6), child: SizedBox(width: w, height: h, child: Stack(clipBehavior: Clip.none, children: [
+        button(h * 0.15, 30),               // Action button
+        button(h * 0.235, 58),              // Volume up
+        button(h * 0.32, 58),               // Volume down
+        button(h * 0.25, 96, left: false),  // Side button
+        button(h * 0.56, 46, left: false, width: 3), // Camera Control
+        // Titanium edge
         Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFF0A0A0C), borderRadius: BorderRadius.circular(56),
-            border: Border.all(color: const Color(0xFF3A3640), width: 1.5),
-            boxShadow: const [BoxShadow(color: Color(0x99000000), blurRadius: 70, offset: Offset(0, 30))],
-          ),
-          padding: const EdgeInsets.all(bezel),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(46),
-            child: Stack(children: [
-              MediaQuery(
-                data: mq.copyWith(size: screen, padding: const EdgeInsets.only(top: statusH, bottom: homeH),
-                    viewPadding: const EdgeInsets.only(top: statusH, bottom: homeH)),
-                child: widget.child,
-              ),
-              // Status bar
-              Positioned(top: 0, left: 0, right: 0, height: statusH, child: IgnorePointer(child: Material(type: MaterialType.transparency, child: Padding(
-                padding: const EdgeInsets.fromLTRB(30, 14, 26, 0),
-                child: ValueListenableBuilder<bool>(valueListenable: darkStatusBar, builder: (_, darkBg, _) => StreamBuilder<DateTime>(stream: _clock, builder: (_, snap) {
-                  final t = snap.data ?? DateTime.now();
-                  final c = darkBg ? Colors.white : dark;
-                  final time = '${t.hour % 12 == 0 ? 12 : t.hour % 12}:${t.minute.toString().padLeft(2, '0')}';
-                  return Row(children: [
-                    Text(time, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: c, letterSpacing: -0.2)),
-                    const Spacer(),
-                    Icon(Icons.signal_cellular_alt, size: 16, color: c), const SizedBox(width: 4),
-                    Icon(Icons.wifi, size: 16, color: c), const SizedBox(width: 4),
-                    Icon(Icons.battery_full, size: 18, color: c),
-                  ]);
-                })),
-              )))),
-              // Notch
-              Positioned(top: 11, left: 0, right: 0, child: IgnorePointer(child: Center(child: Container(
-                width: 118, height: 34, decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(20)),
-              )))),
-              // Home indicator
-              Positioned(bottom: 8, left: 0, right: 0, child: IgnorePointer(child: Center(child: Container(
-                width: 130, height: 5, decoration: BoxDecoration(color: const Color(0xFF8E8A96), borderRadius: BorderRadius.circular(3)),
-              )))),
-            ]),
+          decoration: BoxDecoration(gradient: titanium, borderRadius: BorderRadius.circular(64),
+              boxShadow: const [BoxShadow(color: Color(0xAA000000), blurRadius: 90, offset: Offset(0, 40))]),
+          padding: const EdgeInsets.all(edge),
+          child: Container(
+            decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(61)),
+            padding: const EdgeInsets.all(bezel),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(55),
+              child: Stack(children: [
+                MediaQuery(
+                  data: mq.copyWith(size: screen, padding: const EdgeInsets.only(top: statusH, bottom: homeH),
+                      viewPadding: const EdgeInsets.only(top: statusH, bottom: homeH)),
+                  child: widget.child,
+                ),
+                // iOS status bar
+                Positioned(top: 0, left: 0, right: 0, height: statusH, child: IgnorePointer(child: Material(type: MaterialType.transparency,
+                  child: ValueListenableBuilder<bool>(valueListenable: darkStatusBar, builder: (_, darkBg, _) => StreamBuilder<DateTime>(
+                    stream: _clock,
+                    builder: (_, snap) {
+                      final t = snap.data ?? DateTime.now();
+                      final time = '${t.hour % 12 == 0 ? 12 : t.hour % 12}:${t.minute.toString().padLeft(2, '0')}';
+                      final c = darkBg ? Colors.white : Colors.black;
+                      return Row(children: [
+                        Expanded(child: Center(child: Text(time,
+                            style: TextStyle(color: c, fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: -0.3)))),
+                        const SizedBox(width: 126), // Dynamic Island
+                        Expanded(child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                          _SignalBars(color: c), const SizedBox(width: 5),
+                          Icon(Icons.wifi_rounded, size: 17, color: c), const SizedBox(width: 5),
+                          _Battery(color: c),
+                        ])),
+                      ]);
+                    },
+                  )),
+                ))),
+                // Dynamic Island
+                Positioned(top: 11, left: 0, right: 0, child: IgnorePointer(child: Center(child: Container(
+                  width: 124, height: 36,
+                  decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(20)),
+                  alignment: Alignment.centerRight, padding: const EdgeInsets.only(right: 12),
+                  child: Container(width: 11, height: 11, decoration: BoxDecoration(shape: BoxShape.circle,
+                      gradient: RadialGradient(colors: [const Color(0xFF26304A), Colors.black.withValues(alpha: 0.9)]))),
+                )))),
+                // Home indicator
+                Positioned(bottom: 8, left: 0, right: 0, child: IgnorePointer(child: ValueListenableBuilder<bool>(
+                  valueListenable: darkStatusBar,
+                  builder: (_, darkBg, _) => Center(child: Container(width: 136, height: 5,
+                      decoration: BoxDecoration(color: darkBg ? Colors.white : Colors.black, borderRadius: BorderRadius.circular(3)))),
+                ))),
+              ]),
+            ),
           ),
         ),
-      ]))),
+      ])))))),
     );
   }
+}
+
+/// iOS-style four signal bars.
+class _SignalBars extends StatelessWidget {
+  final Color color;
+  const _SignalBars({required this.color});
+  @override
+  Widget build(BuildContext context) => Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+        for (var i = 0; i < 4; i++) Container(
+          width: 3, height: 4.0 + i * 2.6, margin: const EdgeInsets.only(right: 1.5),
+          decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(1)),
+        ),
+      ]);
+}
+
+/// iOS-style battery: rounded outline, fill and a small cap.
+class _Battery extends StatelessWidget {
+  final Color color;
+  const _Battery({required this.color});
+  @override
+  Widget build(BuildContext context) => Row(children: [
+        Container(
+          width: 25, height: 12, padding: const EdgeInsets.all(1.5),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(4), border: Border.all(color: color.withValues(alpha: 0.4))),
+          child: FractionallySizedBox(alignment: Alignment.centerLeft, widthFactor: 0.8,
+              child: DecoratedBox(decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2)))),
+        ),
+        Container(width: 1.6, height: 4, margin: const EdgeInsets.only(left: 1),
+            decoration: BoxDecoration(color: color.withValues(alpha: 0.4), borderRadius: BorderRadius.circular(1))),
+      ]);
 }

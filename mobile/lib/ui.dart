@@ -27,15 +27,53 @@ Widget card({required Widget child, EdgeInsets padding = const EdgeInsets.all(18
       child: child,
     );
 
-Widget pageHeader(String title, String subtitle, {Widget? trailing}) => Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(title, style: display(28)),
-          const SizedBox(height: 6),
-          Text(subtitle, style: const TextStyle(color: muted, height: 1.4)),
-        ])),
-        ?trailing,
+/// Compact, friendly banner at the top of each screen: pastel card, icon, title, one short line,
+/// and a rounded studio photo on the right. Optional extra content (stats) sits underneath.
+Widget pageHeader(String title, String subtitle, {required String image, required IconData icon, String? eyebrow,
+    Widget? trailing, Widget? child, Alignment focus = const Alignment(0, -0.3), bool inset = true, Color tint = lavender}) => Padding(
+      padding: inset ? const EdgeInsets.fromLTRB(16, 6, 16, 12) : const EdgeInsets.only(bottom: 12),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: tint, borderRadius: BorderRadius.circular(24),
+          boxShadow: [BoxShadow(color: tint.withValues(alpha: 0.6), blurRadius: 18, offset: const Offset(0, 8))],
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Container(width: 30, height: 30, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)),
+                    child: Icon(icon, color: purple, size: 17)),
+                if (eyebrow != null) ...[
+                  const SizedBox(width: 8),
+                  Flexible(child: Text(eyebrow, maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: purple, fontSize: 11.5, fontWeight: FontWeight.w800))),
+                ],
+              ]),
+              const SizedBox(height: 10),
+              Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: display(22)),
+              const SizedBox(height: 3),
+              Text(subtitle, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: muted, fontSize: 12.5, height: 1.35)),
+              if (trailing != null) ...[const SizedBox(height: 10), trailing],
+            ])),
+            const SizedBox(width: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(18),
+              child: SizedBox(width: 84, height: 104, child: Image.asset(image, fit: BoxFit.cover, alignment: focus)),
+            ),
+          ]),
+          if (child != null) ...[const SizedBox(height: 12), child],
+        ]),
+      ),
+    );
+
+/// A small frosted chip for banners (e.g. a rating or a count).
+Widget bannerChip(IconData icon, String text) => Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.85), borderRadius: BorderRadius.circular(20)),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 13, color: purple), const SizedBox(width: 4),
+        Text(text, style: const TextStyle(color: dark, fontSize: 11.5, fontWeight: FontWeight.w700)),
       ]),
     );
 
@@ -55,7 +93,7 @@ class LookbookGrid extends StatelessWidget {
         const SizedBox(height: 10),
         Text('No looks match this category', style: display(17)),
         const SizedBox(height: 4),
-        const Text('Select "For You" to browse the full TrueFit AI lookbook.', textAlign: TextAlign.center, style: TextStyle(color: muted)),
+        const Text('Select "For You" to browse the full TrueFit Studio lookbook.', textAlign: TextAlign.center, style: TextStyle(color: muted)),
       ]));
     }
     final left = [for (var i = 0; i < items.length; i += 2) items[i]];
